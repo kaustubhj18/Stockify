@@ -19,7 +19,7 @@ This project is built with a focus on simplicity, speed, and powerful backend co
 
 | Category | Technology/Library | Purpose |
 | :--- | :--- | :--- |
-| **Backend/Core** | Python 3.x | Main programming language. |
+| **Backend/Core** | Python 3.11 | Main programming language. |
 | **Web Framework** | [Streamlit](https://streamlit.io/) | For creating and hosting the web application. |
 | **Data Acquisition** | `yfinance` | Fetching historical and real-time stock data. |
 | **Numerical Computing** | `numpy`, `pandas` | Data manipulation and scientific computing. |
