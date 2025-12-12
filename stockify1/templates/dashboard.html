@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Stockify{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        margin-bottom: 2rem;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Updated styles for watchlist and portfolio sections */
+    .dashboard-section {
+        margin-bottom: 3rem;
+    }
+    
+    .dashboard-section h2 {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .stock-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .stock-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .stock-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stock-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+    
+    .stock-symbol {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+    
+    .stock-name {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+    }
+    
+    .stock-price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stock-change {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .stock-change.positive {
+        color: var(--secondary);
+    }
+    
+    .stock-change.negative {
+        color: var(--danger);
+    }
+    
+    .portfolio-details {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+    
+    .portfolio-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .portfolio-label {
+        color: var(--text-muted);
+    }
+    
+    .portfolio-value {
+        font-weight: 600;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+    }
+    
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-state h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        margin-bottom: 1.5rem;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+    
+    .spinner {
+        border: 3px solid var(--border);
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .portfolio-summary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 0.75rem;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .summary-item h3 {
+        font-size: 0.875rem;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .summary-item .value {
+        font-size: 1.75rem;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>Dashboard</h1>
+        <p style="color: var(--text-muted);">Your personalized stock portfolio and watchlist</p>
+    </div>
+    
+    <!-- Added portfolio summary section -->
+    <div id="portfolioSummary"></div>
+    
+    <!-- Replaced market indices with watchlist section -->
+    <div class="dashboard-section">
+        <h2>📊 My Watchlist</h2>
+        <div id="watchlistContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading watchlist...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Added portfolio holdings section -->
+    <div class="dashboard-section">
+        <h2>💼 My Portfolio</h2>
+        <div id="portfolioContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading portfolio...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadDashboardData() {
+        await Promise.all([
+            loadWatchlist(),
+            loadPortfolio()
+        ]);
+    }
+    
+    async function loadWatchlist() {
+        try {
+            const response = await fetch('/api/watchlist');
+            const data = await response.json();
+            
+            if (data.success) {
+                displayWatchlist(data.watchlist);
+            } else {
+                document.getElementById('watchlistContainer').innerHTML = '<p class="alert alert-error">Failed to load watchlist</p>';
+            }
+        } catch (error) {
+            console.error('Error loading watchlist:', error);
+            document.getElementById('watchlistContainer').innerHTML = '<p class="alert alert-error">Error loading watchlist</p>';
+        }
+    }
+    
+    async function loadPortfolio() {
+        try {
+            const response = await fetch('/api/portfolio');
+            const data = await response.json();
+            
+            if (data.success) {
+                displayPortfolioSummary(data.summary);
+                displayPortfolio(data.portfolio);
+            } else {
+                document.getElementById('portfolioContainer').innerHTML = '<p class="alert alert-error">Failed to load portfolio</p>';
+            }
+        } catch (error) {
+            console.error('Error loading portfolio:', error);
+            document.getElementById('portfolioContainer').innerHTML = '<p class="alert alert-error">Error loading portfolio</p>';
+        }
+    }
+    
+    function displayWatchlist(watchlist) {
+        if (watchlist.length === 0) {
+            document.getElementById('watchlistContainer').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <h3>Your watchlist is empty</h3>
+                    <p>Start tracking stocks by adding them to your watchlist</p>
+                    <a href="/search" class="btn btn-primary">Search Stocks</a>
+                </div>
+            `;
+            return;
+        }
+        
+        const html = watchlist.map(stock => `
+            <div class="stock-card" onclick="window.location.href='/stock/${stock.symbol}'">
+                <div class="stock-header">
+                    <div>
+                        <div class="stock-symbol">${stock.symbol}</div>
+                        <div class="stock-name">${stock.name}</div>
+                    </div>
+                </div>
+                <div class="stock-price">₹${stock.price.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                <div class="stock-change ${stock.change >= 0 ? 'positive' : 'negative'}">
+                    <span>${stock.change >= 0 ? '▲' : '▼'}</span>
+                    <span>₹${Math.abs(stock.change).toFixed(2)} (${Math.abs(stock.change_percent).toFixed(2)}%)</span>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('watchlistContainer').innerHTML = `<div class="stock-grid">${html}</div>`;
+    }
+    
+    function displayPortfolioSummary(summary) {
+        if (summary.total_invested === 0) {
+            document.getElementById('portfolioSummary').innerHTML = '';
+            return;
+        }
+        
+        const isProfit = summary.total_profit_loss >= 0;
+        
+        document.getElementById('portfolioSummary').innerHTML = `
+            <div class="portfolio-summary">
+                <h2 style="margin-bottom: 1.5rem;">Portfolio Summary</h2>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <h3>Total Invested</h3>
+                        <div class="value">₹${summary.total_invested.toLocaleString('en-IN')}</div>
+                    </div>
+                    <div class="summary-item">
+                        <h3>Current Value</h3>
+                        <div class="value">₹${summary.total_value.toLocaleString('en-IN')}</div>
+                    </div>
+                    <div class="summary-item">
+                        <h3>Total P&L</h3>
+                        <div class="value" style="color: ${isProfit ? '#10b981' : '#ef4444'}">
+                            ${isProfit ? '+' : ''}₹${summary.total_profit_loss.toLocaleString('en-IN')} 
+                            (${isProfit ? '+' : ''}${summary.total_profit_loss_percent.toFixed(2)}%)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    function displayPortfolio(portfolio) {
+        if (portfolio.length === 0) {
+            document.getElementById('portfolioContainer').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">💼</div>
+                    <h3>Your portfolio is empty</h3>
+                    <p>Start building your portfolio by adding your stock holdings</p>
+                    <a href="/portfolio" class="btn btn-primary">Manage Portfolio</a>
+                </div>
+            `;
+            return;
+        }
+        
+        const html = portfolio.map(holding => {
+            const isProfit = holding.profit_loss >= 0;
+            return `
+                <div class="stock-card" onclick="window.location.href='/stock/${holding.symbol}'">
+                    <div class="stock-header">
+                        <div>
+                            <div class="stock-symbol">${holding.symbol}</div>
+                            <div class="stock-name">${holding.name}</div>
+                        </div>
+                    </div>
+                    <div class="stock-price">₹${holding.current_price.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div class="portfolio-details">
+                        <div class="portfolio-row">
+                            <span class="portfolio-label">Quantity:</span>
+                            <span class="portfolio-value">${holding.quantity}</span>
+                        </div>
+                        <div class="portfolio-row">
+                            <span class="portfolio-label">Buy Price:</span>
+                            <span class="portfolio-value">₹${holding.buy_price.toFixed(2)}</span>
+                        </div>
+                        <div class="portfolio-row">
+                            <span class="portfolio-label">Invested:</span>
+                            <span class="portfolio-value">₹${holding.invested_value.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="portfolio-row">
+                            <span class="portfolio-label">Current Value:</span>
+                            <span class="portfolio-value">₹${holding.current_value.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div class="portfolio-row">
+                            <span class="portfolio-label">P&L:</span>
+                            <span class="portfolio-value" style="color: ${isProfit ? 'var(--secondary)' : 'var(--danger)'}">
+                                ${isProfit ? '+' : ''}₹${holding.profit_loss.toFixed(2)} (${isProfit ? '+' : ''}${holding.profit_loss_percent.toFixed(2)}%)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        document.getElementById('portfolioContainer').innerHTML = `<div class="stock-grid">${html}</div>`;
+    }
+    
+    // Load dashboard data on page load
+    loadDashboardData();
+    
+    // Refresh data every 60 seconds
+    setInterval(loadDashboardData, 60000);
+</script>
+{% endblock %}

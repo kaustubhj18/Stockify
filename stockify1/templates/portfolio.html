@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Portfolio - Stockify{% endblock %}
+
+{% block extra_css %}
+<style>
+    .portfolio-header {
+        margin-bottom: 2rem;
+    }
+    
+    .portfolio-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .summary-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+    }
+    
+    .summary-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+    
+    .summary-value {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    
+    .add-holding-form {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .portfolio-table {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        overflow: hidden;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th {
+        background: var(--background);
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    tr:last-child td {
+        border-bottom: none;
+    }
+    
+    tr:hover {
+        background: var(--background);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 3rem;
+    }
+    
+    .spinner {
+        border: 3px solid var(--border);
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 1.5rem;">
+        <!-- Updated back button to use history navigation -->
+        <button onclick="goBack()" class="btn btn-back">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back
+        </button>
+    </div>
+    
+    <div class="portfolio-header">
+        <h1>My Portfolio</h1>
+    </div>
+    
+    <div id="summaryContent">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading portfolio...</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2 class="card-title">Add Holding</h2>
+        <div class="add-holding-form">
+            <input type="text" id="symbolInput" class="form-control" placeholder="Stock Symbol (e.g., AAPL)">
+            <input type="number" id="quantityInput" class="form-control" placeholder="Quantity" min="1" step="1">
+            <input type="number" id="buyPriceInput" class="form-control" placeholder="Buy Price" min="0" step="0.01">
+            <button onclick="addToPortfolio()" class="btn btn-primary">Add</button>
+        </div>
+        <div id="addAlert" style="display: none;"></div>
+    </div>
+    
+    <div id="portfolioContent"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function goBack() {
+        window.history.back();
+    }
+    
+    async function loadPortfolio() {
+        try {
+            const response = await fetch('/api/portfolio');
+            const data = await response.json();
+            
+            if (data.success) {
+                displaySummary(data.summary);
+                displayPortfolio(data.portfolio);
+            } else {
+                document.getElementById('summaryContent').innerHTML = `
+                    <div class="alert alert-error">${data.message}</div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading portfolio:', error);
+            document.getElementById('summaryContent').innerHTML = `
+                <div class="alert alert-error">Error loading portfolio</div>
+            `;
+        }
+    }
+    
+    function displaySummary(summary) {
+        const profitLossColor = summary.total_profit_loss >= 0 ? 'var(--secondary)' : 'var(--danger)';
+        
+        const html = `
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="summary-label">Total Invested</div>
+                    <div class="summary-value">₹${summary.total_invested.toLocaleString()}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Current Value</div>
+                    <div class="summary-value">₹${summary.total_value.toLocaleString()}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Total P/L</div>
+                    <div class="summary-value" style="color: ${profitLossColor}">
+                        ${summary.total_profit_loss >= 0 ? '+' : ''}₹${summary.total_profit_loss.toLocaleString()}
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Total Return</div>
+                    <div class="summary-value" style="color: ${profitLossColor}">
+                        ${summary.total_profit_loss >= 0 ? '+' : ''}${summary.total_profit_loss_percent.toFixed(2)}%
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('summaryContent').innerHTML = html;
+    }
+    
+    function displayPortfolio(portfolio) {
+        if (portfolio.length === 0) {
+            document.getElementById('portfolioContent').innerHTML = `
+                <div class="empty-state">
+                    <h2>Your portfolio is empty</h2>
+                    <p>Add your holdings to track performance</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const html = `
+            <div class="portfolio-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Name</th>
+                            <th>Quantity</th>
+                            <th>Buy Price</th>
+                            <th>Current Price</th>
+                            <th>Invested</th>
+                            <th>Current Value</th>
+                            <th>P/L</th>
+                            <th>Return %</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${portfolio.map(holding => {
+                            const profitLossColor = holding.profit_loss >= 0 ? 'var(--secondary)' : 'var(--danger)';
+                            
+                            return `
+                                <tr>
+                                    <td><strong>${holding.symbol}</strong></td>
+                                    <td>${holding.name}</td>
+                                    <td>${holding.quantity}</td>
+                                    <td>₹${holding.buy_price.toFixed(2)}</td>
+                                    <td>₹${holding.current_price.toFixed(2)}</td>
+                                    <td>₹${holding.invested_value.toLocaleString()}</td>
+                                    <td>₹${holding.current_value.toLocaleString()}</td>
+                                    <td style="color: ${profitLossColor}; font-weight: 600;">
+                                        ${holding.profit_loss >= 0 ? '+' : ''}₹${holding.profit_loss.toFixed(2)}
+                                    </td>
+                                    <td style="color: ${profitLossColor}; font-weight: 600;">
+                                        ${holding.profit_loss >= 0 ? '+' : ''}${holding.profit_loss_percent.toFixed(2)}%
+                                    </td>
+                                    <td>
+                                        <button onclick="removeFromPortfolio('${holding.symbol}')" class="btn btn-danger" style="padding: 0.5rem 1rem;">Remove</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        document.getElementById('portfolioContent').innerHTML = html;
+    }
+    
+    async function addToPortfolio() {
+        const symbol = document.getElementById('symbolInput').value.trim().toUpperCase();
+        const quantity = parseFloat(document.getElementById('quantityInput').value);
+        const buyPrice = parseFloat(document.getElementById('buyPriceInput').value);
+        const alertDiv = document.getElementById('addAlert');
+        
+        if (!symbol || !quantity || !buyPrice) {
+            alertDiv.className = 'alert alert-error';
+            alertDiv.textContent = 'Please fill all fields';
+            alertDiv.style.display = 'block';
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/portfolio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symbol, quantity, buy_price: buyPrice })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alertDiv.className = 'alert alert-success';
+                alertDiv.textContent = data.message;
+                alertDiv.style.display = 'block';
+                document.getElementById('symbolInput').value = '';
+                document.getElementById('quantityInput').value = '';
+                document.getElementById('buyPriceInput').value = '';
+                loadPortfolio();
+            } else {
+                alertDiv.className = 'alert alert-error';
+                alertDiv.textContent = data.message;
+                alertDiv.style.display = 'block';
+            }
+        } catch (error) {
+            alertDiv.className = 'alert alert-error';
+            alertDiv.textContent = 'Error adding to portfolio';
+            alertDiv.style.display = 'block';
+        }
+    }
+    
+    async function removeFromPortfolio(symbol) {
+        if (!confirm(`Remove ${symbol} from portfolio?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/portfolio', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symbol })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                loadPortfolio();
+            }
+        } catch (error) {
+            console.error('Error removing from portfolio:', error);
+        }
+    }
+    
+    // Load portfolio on page load
+    loadPortfolio();
+    
+    // Refresh every 60 seconds
+    setInterval(loadPortfolio, 60000);
+</script>
+{% endblock %}

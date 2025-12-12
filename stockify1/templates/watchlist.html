@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Watchlist - Stockify{% endblock %}
+
+{% block extra_css %}
+<style>
+    .watchlist-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .watchlist-header h1 {
+        font-size: 2.5rem;
+    }
+    
+    .add-stock-form {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .add-stock-form input {
+        flex: 1;
+        max-width: 300px;
+    }
+    
+    .watchlist-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .stock-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        transition: transform 0.3s, border-color 0.3s;
+        cursor: pointer;
+    }
+    
+    .stock-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary);
+    }
+    
+    .stock-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+    
+    .stock-symbol {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+    
+    .stock-name {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+    
+    .stock-price {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stock-change {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .stock-change.positive {
+        color: var(--secondary);
+    }
+    
+    .stock-change.negative {
+        color: var(--danger);
+    }
+    
+    .remove-btn {
+        background: transparent;
+        border: none;
+        color: var(--danger);
+        cursor: pointer;
+        font-size: 1.25rem;
+        padding: 0.25rem;
+    }
+    
+    .remove-btn:hover {
+        opacity: 0.7;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-muted);
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 3rem;
+    }
+    
+    .spinner {
+        border: 3px solid var(--border);
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div style="margin-bottom: 1.5rem;">
+        <!-- Updated back button to use history navigation -->
+        <button onclick="goBack()" class="btn btn-back">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Back
+        </button>
+    </div>
+    
+    <div class="watchlist-header">
+        <h1>My Watchlist</h1>
+    </div>
+    
+    <div class="card">
+        <h2 class="card-title">Add Stock to Watchlist</h2>
+        <div class="add-stock-form">
+            <input type="text" id="symbolInput" class="form-control" placeholder="Enter stock symbol (e.g., AAPL, RELIANCE.NS)">
+            <button onclick="addToWatchlist()" class="btn btn-primary">Add to Watchlist</button>
+        </div>
+        <div id="addAlert" style="display: none;"></div>
+    </div>
+    
+    <div id="watchlistContent">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Loading watchlist...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function goBack() {
+        window.history.back();
+    }
+    
+    async function loadWatchlist() {
+        try {
+            const response = await fetch('/api/watchlist');
+            const data = await response.json();
+            
+            if (data.success) {
+                displayWatchlist(data.watchlist);
+            } else {
+                document.getElementById('watchlistContent').innerHTML = `
+                    <div class="alert alert-error">${data.message}</div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading watchlist:', error);
+            document.getElementById('watchlistContent').innerHTML = `
+                <div class="alert alert-error">Error loading watchlist</div>
+            `;
+        }
+    }
+    
+    function displayWatchlist(watchlist) {
+        if (watchlist.length === 0) {
+            document.getElementById('watchlistContent').innerHTML = `
+                <div class="empty-state">
+                    <h2>Your watchlist is empty</h2>
+                    <p>Add stocks to track their performance</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const html = `
+            <div class="watchlist-grid">
+                ${watchlist.map(stock => {
+                    const isPositive = stock.change >= 0;
+                    const changeClass = isPositive ? 'positive' : 'negative';
+                    const changeSymbol = isPositive ? '▲' : '▼';
+                    
+                    return `
+                        <div class="stock-card" onclick="viewStock('${stock.symbol}')">
+                            <div class="stock-card-header">
+                                <div class="stock-symbol">${stock.symbol}</div>
+                                <button class="remove-btn" onclick="event.stopPropagation(); removeFromWatchlist('${stock.symbol}')">×</button>
+                            </div>
+                            <div class="stock-name">${stock.name}</div>
+                            <div class="stock-price">₹${stock.price.toFixed(2)}</div>
+                            <div class="stock-change ${changeClass}">
+                                ${changeSymbol} ${Math.abs(stock.change).toFixed(2)} (${Math.abs(stock.change_percent).toFixed(2)}%)
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+        
+        document.getElementById('watchlistContent').innerHTML = html;
+    }
+    
+    async function addToWatchlist() {
+        const symbol = document.getElementById('symbolInput').value.trim().toUpperCase();
+        const alertDiv = document.getElementById('addAlert');
+        
+        if (!symbol) {
+            alertDiv.className = 'alert alert-error';
+            alertDiv.textContent = 'Please enter a stock symbol';
+            alertDiv.style.display = 'block';
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/watchlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symbol })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alertDiv.className = 'alert alert-success';
+                alertDiv.textContent = data.message;
+                alertDiv.style.display = 'block';
+                document.getElementById('symbolInput').value = '';
+                loadWatchlist();
+            } else {
+                alertDiv.className = 'alert alert-error';
+                alertDiv.textContent = data.message;
+                alertDiv.style.display = 'block';
+            }
+        } catch (error) {
+            alertDiv.className = 'alert alert-error';
+            alertDiv.textContent = 'Error adding to watchlist';
+            alertDiv.style.display = 'block';
+        }
+    }
+    
+    async function removeFromWatchlist(symbol) {
+        if (!confirm(`Remove ${symbol} from watchlist?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/watchlist', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symbol })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                loadWatchlist();
+            }
+        } catch (error) {
+            console.error('Error removing from watchlist:', error);
+        }
+    }
+    
+    function viewStock(symbol) {
+        window.location.href = `/stock/${symbol}`;
+    }
+    
+    document.getElementById('symbolInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addToWatchlist();
+        }
+    });
+    
+    // Load watchlist on page load
+    loadWatchlist();
+    
+    // Refresh every 60 seconds
+    setInterval(loadWatchlist, 60000);
+</script>
+{% endblock %}

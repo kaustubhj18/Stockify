@@ -1,0 +1,581 @@
+{% extends "base.html" %}
+
+{% block title %}Search Stocks - Stockify{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .back-button-container {
+        margin-bottom: 2rem;
+    }
+    
+    /* Added market section styles from dashboard */
+    .market-section {
+        margin-bottom: 3rem;
+    }
+    
+    .market-section h2 {
+        font-size: 1.75rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .market-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .market-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .market-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .market-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .market-name {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .market-symbol {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0.25rem;
+    }
+    
+    .market-price {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .market-change {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    
+    .market-change.positive {
+        color: var(--secondary);
+    }
+    
+    .market-change.negative {
+        color: var(--danger);
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-muted);
+    }
+    
+    .spinner {
+        border: 3px solid var(--border);
+        border-top: 3px solid var(--primary);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1rem;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .last-updated {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        margin-top: 1rem;
+    }
+    
+    .search-section {
+        margin-bottom: 2rem;
+    }
+    
+    .search-box {
+        display: flex;
+        gap: 1rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .search-box input {
+        flex: 1;
+        font-size: 1.125rem;
+        padding: 1rem 1.5rem;
+    }
+    
+    .search-box button {
+        padding: 1rem 2rem;
+        font-size: 1.125rem;
+    }
+    
+    .search-tips {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+    }
+    
+    .search-tips h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        color: var(--primary-light);
+    }
+    
+    .search-tips ul {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .search-tips li {
+        padding: 0.5rem 0;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .search-tips li::before {
+        content: '→';
+        color: var(--primary);
+        font-weight: bold;
+    }
+    
+    .popular-stocks {
+        margin-top: 3rem;
+    }
+    
+    .popular-stocks h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--text);
+    }
+    
+    .stock-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .stock-chip-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .stock-chip {
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        flex: 1;
+        margin-right: 0.5rem;
+    }
+    
+    .stock-chip:hover {
+        border-color: var(--primary);
+        background: var(--surface-light);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px var(--shadow);
+    }
+    
+    .watchlist-btn {
+        background: var(--primary);
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .watchlist-btn:hover {
+        background: var(--primary-dark);
+        transform: scale(1.1);
+    }
+    
+    .watchlist-btn.added {
+        background: var(--secondary);
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .search-box {
+            flex-direction: column;
+        }
+        
+        .stock-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+        
+        .stock-chip-container {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .stock-chip {
+            margin-right: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="back-button-container">
+        <button onclick="goBack()" class="btn btn-back">
+            ← Back
+        </button>
+    </div>
+    
+    <div class="page-header">
+        <h1>Search Stocks</h1>
+        <p style="color: var(--text-muted);">Find and analyze stocks from Indian and International markets</p>
+    </div>
+    
+    <!-- Moved search section to top, above market indices -->
+    <div class="search-section">
+        <div class="card">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="stockSearch" 
+                    class="form-control" 
+                    placeholder="Enter stock symbol (e.g., RELIANCE.NS, AAPL, TSLA)"
+                    autofocus
+                >
+                <button onclick="searchStock()" class="btn btn-primary">Search</button>
+            </div>
+            
+            <div class="search-tips">
+                <h3>Search Tips</h3>
+                <ul>
+                    <li>For Indian stocks, add .NS suffix (e.g., RELIANCE.NS, TCS.NS)</li>
+                    <li>For US stocks, use the ticker symbol directly (e.g., AAPL, GOOGL, TSLA)</li>
+                    <li>Search is case-insensitive</li>
+                    <li>Make sure to use the correct stock exchange suffix</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="popular-stocks">
+        <h3>Popular Stocks</h3>
+        <div class="stock-grid">
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('RELIANCE.NS')">RELIANCE.NS</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('RELIANCE.NS', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('TCS.NS')">TCS.NS</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('TCS.NS', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('INFY.NS')">INFY.NS</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('INFY.NS', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('HDFCBANK.NS')">HDFCBANK.NS</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('HDFCBANK.NS', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('AAPL')">AAPL</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('AAPL', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('GOOGL')">GOOGL</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('GOOGL', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('TSLA')">TSLA</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('TSLA', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('MSFT')">MSFT</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('MSFT', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('AMZN')">AMZN</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('AMZN', event)" title="Add to Watchlist">+</button>
+            </div>
+            <div class="stock-chip-container">
+                <div class="stock-chip" onclick="quickSearch('NVDA')">NVDA</div>
+                <button class="watchlist-btn" onclick="addToWatchlistFromSearch('NVDA', event)" title="Add to Watchlist">+</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Market indices moved below search and popular stocks -->
+    <div class="market-section">
+        <h2>🇮🇳 Indian Market Indices</h2>
+        <div id="indianMarket" class="market-grid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading market data...</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="market-section">
+        <h2>🌍 International Market Indices</h2>
+        <div id="internationalMarket" class="market-grid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading market data...</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="last-updated" id="lastUpdated"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadMarketStatus() {
+        try {
+            const response = await fetch('/api/market-status');
+            const data = await response.json();
+            
+            if (data.success) {
+                displayIndianMarket(data.indian_market);
+                displayInternationalMarket(data.international_market);
+                updateLastUpdated();
+            } else {
+                document.getElementById('indianMarket').innerHTML = '<p class="alert alert-error">Failed to load market data</p>';
+                document.getElementById('internationalMarket').innerHTML = '<p class="alert alert-error">Failed to load market data</p>';
+            }
+        } catch (error) {
+            console.error('Error loading market data:', error);
+            document.getElementById('indianMarket').innerHTML = '<p class="alert alert-error">Error loading market data</p>';
+            document.getElementById('internationalMarket').innerHTML = '<p class="alert alert-error">Error loading market data</p>';
+        }
+    }
+    
+    function displayIndianMarket(data) {
+        const html = `
+            ${createMarketCard('NIFTY 50', data.nifty, null, null)}
+            ${createMarketCard('SENSEX', data.sensex, null, null)}
+        `;
+        document.getElementById('indianMarket').innerHTML = html;
+    }
+    
+    function displayInternationalMarket(data) {
+        const html = `
+            ${createMarketCard('S&P 500', data.sp500, null, null)}
+            ${createMarketCard('NASDAQ', data.nasdaq, null, null)}
+            ${createMarketCard('DOW JONES', data.dow, null, null)}
+        `;
+        document.getElementById('internationalMarket').innerHTML = html;
+    }
+    
+    function createMarketCard(name, data, companyName, symbol) {
+        const isPositive = data.change >= 0;
+        const changeClass = isPositive ? 'positive' : 'negative';
+        const changeSymbol = isPositive ? '▲' : '▼';
+        
+        // Market indices are not clickable to stock pages, but show info on click
+        const clickHandler = symbol ? `onclick="window.location.href='/stock/${symbol}'"` : `onclick="showMarketInfo('${name}', ${JSON.stringify(data)})"`;
+        
+        return `
+            <div class="market-card" ${clickHandler}>
+                <div class="market-card-header">
+                    <div>
+                        <div class="market-symbol">${name}</div>
+                        ${companyName ? `<div class="market-company">${companyName}</div>` : ''}
+                    </div>
+                </div>
+                <div class="market-price">₹${data.price.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                <div class="market-change ${changeClass}">
+                    <span>${changeSymbol}</span>
+                    <span>₹${Math.abs(data.change).toFixed(2)} (${Math.abs(data.change_percent).toFixed(2)}%)</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    function showMarketInfo(name, data) {
+        const isPositive = data.change >= 0;
+        const changeSymbol = isPositive ? '▲' : '▼';
+        
+        const message = `${name} Market Index Information:\n\nCurrent Value: ₹${data.price.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\nChange: ${changeSymbol} ₹${Math.abs(data.change).toFixed(2)}\nChange %: ${changeSymbol} ${Math.abs(data.change_percent).toFixed(2)}%\n\nNote: Market indices represent overall market performance and cannot be traded directly. To invest in market indices, consider index funds or ETFs.`;
+        
+        alert(message);
+    }
+    
+    function updateLastUpdated() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-IN');
+        document.getElementById('lastUpdated').textContent = `Last updated: ${timeString}`;
+    }
+    
+    // Load market data on page load and refresh every minute
+    loadMarketStatus();
+    setInterval(loadMarketStatus, 60000);
+    
+    function searchStock() {
+        const symbol = document.getElementById('stockSearch').value.trim().toUpperCase();
+        if (symbol) {
+            window.location.href = `/stock/${symbol}`;
+        } else {
+            alert('Please enter a stock symbol');
+        }
+    }
+    
+    function quickSearch(symbol) {
+        window.location.href = `/stock/${symbol}`;
+    }
+    
+    async function addToWatchlistFromSearch(symbol, event) {
+        event.stopPropagation(); // Prevent triggering the stock chip click
+        
+        try {
+            const response = await fetch('/api/watchlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ symbol: symbol })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Change button appearance to show it's added
+                const btn = event.target;
+                btn.textContent = '✓';
+                btn.classList.add('added');
+                btn.title = 'Added to Watchlist';
+                
+                // Show success message
+                showNotification('Added to watchlist!', 'success');
+            } else {
+                showNotification(data.message, 'error');
+            }
+        } catch (error) {
+            showNotification('Error adding to watchlist', 'error');
+        }
+    }
+    
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        // Style the notification
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        if (type === 'success') {
+            notification.style.backgroundColor = 'var(--secondary)';
+        } else if (type === 'error') {
+            notification.style.backgroundColor = 'var(--danger)';
+        } else {
+            notification.style.backgroundColor = 'var(--primary)';
+        }
+        
+        // Add to page
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+    
+    function goBack() {
+        window.history.back();
+    }
+    
+    // Search on Enter key
+    document.getElementById('stockSearch').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            searchStock();
+        }
+    });
+</script>
+{% endblock %}

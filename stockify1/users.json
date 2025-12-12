@@ -1,0 +1,79 @@
+[
+  {
+    "email": "xyz@gmail.com",
+    "password": "123456",
+    "name": "XYZ",
+    "created_at": "2025-10-02T16:07:13.565321",
+    "watchlist": [
+      "AAPL",
+      "RELIANCW",
+      "RELIANCE",
+      "NIFTY 50",
+      "TSLA",
+      "RELIANCE.NS",
+      "SENSEX",
+      "INFY.NS"
+    ],
+    "portfolio": []
+  },
+  {
+    "email": "kj@gmail.com",
+    "password": "123456",
+    "name": "Kaustubh Rajesh Jadhav",
+    "created_at": "2025-10-14T21:11:20.301506",
+    "watchlist": [],
+    "portfolio": []
+  },
+  {
+    "email": "kaustubh.rj@somaiya.edu",
+    "password": "123456",
+    "name": "KJ",
+    "created_at": "2025-11-10T09:25:16.910286",
+    "watchlist": [
+      "AAPL"
+    ],
+    "portfolio": [
+      {
+        "symbol": "AAPL",
+        "quantity": 1,
+        "buy_price": 10000,
+        "date": "2025-11-10T09:27:45.937145"
+      }
+    ]
+  },
+  {
+    "email": "ad@gmail.com",
+    "password": "123",
+    "name": "aditya",
+    "created_at": "2025-11-10T10:26:27.920467",
+    "watchlist": [
+      "RELIANCE.NS",
+      "TCS.NS"
+    ],
+    "portfolio": [
+      {
+        "symbol": "AAPL",
+        "quantity": 10000,
+        "buy_price": 100000,
+        "date": "2025-11-10T10:36:40.718762"
+      }
+    ]
+  },
+  {
+    "email": "adi@gmail.com",
+    "password": "123",
+    "name": "ADITYA",
+    "created_at": "2025-11-10T11:25:07.928227",
+    "watchlist": [
+      "RELIANCE.NS"
+    ],
+    "portfolio": [
+      {
+        "symbol": "AAPL",
+        "quantity": 100,
+        "buy_price": 10000,
+        "date": "2025-11-10T11:31:15.939482"
+      }
+    ]
+  }
+]

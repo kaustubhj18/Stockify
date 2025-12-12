@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Stockify{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+        border-radius: 1rem;
+        margin-bottom: 3rem;
+    }
+    
+    .hero h1 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .hero p {
+        font-size: 1.25rem;
+        color: var(--text-muted);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+    
+    .feature-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 2rem;
+        transition: transform 0.3s, border-color 0.3s;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary);
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(37, 99, 235, 0.1);
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .feature-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--primary);
+    }
+    
+    .feature-card p {
+        color: var(--text-muted);
+        line-height: 1.6;
+    }
+    
+    .cta-section {
+        text-align: center;
+        padding: 3rem 2rem;
+        background: var(--surface);
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+    }
+    
+    .cta-section h2 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .cta-section p {
+        color: var(--text-muted);
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hero">
+        <h1>Welcome to Stockify</h1>
+        <p>AI-Powered Stock Analysis Platform with Hybrid Prediction Models</p>
+    </div>
+    
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Real-Time Market Data</h3>
+            <p>Track Indian and international market indices in real-time. Get instant updates on NIFTY, SENSEX, S&P 500, NASDAQ, and DOW JONES.</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Comprehensive Stock Analysis</h3>
+            <p>Search any stock and get detailed information including PE ratio, market cap, volume, and complete historical data analysis.</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>Hybrid AI Predictions</h3>
+            <p>Our advanced hybrid model combines historical graph analysis with sentiment analysis from trusted news sources for accurate 14-day predictions.</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">📈</div>
+            <h3>Historical Analysis</h3>
+            <p>Multi-feature historical models analyze price patterns, volume, moving averages, and technical indicators to minimize prediction bias.</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">📰</div>
+            <h3>Sentiment Analysis</h3>
+            <p>Real-time sentiment analysis from multiple trusted news sources and financial articles to gauge market sentiment and predict trends.</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">💼</div>
+            <h3>Portfolio Management</h3>
+            <p>Create and manage your watchlist and portfolio. Track your investments and get personalized insights on your holdings.</p>
+        </div>
+    </div>
+    
+    <div class="cta-section">
+        <h2>Ready to Start Analyzing?</h2>
+        <p>Access powerful AI-driven stock predictions and make informed investment decisions</p>
+        <a href="/dashboard" class="btn btn-primary" style="font-size: 1.125rem; padding: 1rem 2rem;">Get Started</a>
+    </div>
+</div>
+{% endblock %}

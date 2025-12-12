@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Stockify{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Improved animated stock market background with better form visibility */
+    .login-wrapper {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+    }
+    
+    .stock-chart-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        overflow: hidden;
+    }
+    
+    /* Animated candlestick charts */
+    .candlestick-chart {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 60%;
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        padding: 0 20px;
+        opacity: 0.2;
+    }
+    
+    .candlestick {
+        flex: 1;
+        background: linear-gradient(to top, #10b981, #34d399);
+        border-radius: 2px;
+        animation: priceMove 2s ease-in-out infinite;
+        position: relative;
+    }
+    
+    .candlestick.red {
+        background: linear-gradient(to top, #ef4444, #f87171);
+    }
+    
+    .candlestick:nth-child(1) { height: 40%; animation-delay: 0s; }
+    .candlestick:nth-child(2) { height: 65%; animation-delay: 0.2s; }
+    .candlestick:nth-child(3) { height: 45%; animation-delay: 0.4s; }
+    .candlestick:nth-child(4) { height: 80%; animation-delay: 0.6s; }
+    .candlestick:nth-child(5) { height: 55%; animation-delay: 0.8s; }
+    .candlestick:nth-child(6) { height: 70%; animation-delay: 1s; }
+    .candlestick:nth-child(7) { height: 50%; animation-delay: 1.2s; }
+    .candlestick:nth-child(8) { height: 85%; animation-delay: 1.4s; }
+    .candlestick:nth-child(9) { height: 60%; animation-delay: 1.6s; }
+    .candlestick:nth-child(10) { height: 75%; animation-delay: 1.8s; }
+    
+    @keyframes priceMove {
+        0%, 100% { transform: scaleY(1); opacity: 0.2; }
+        50% { transform: scaleY(1.3); opacity: 0.4; }
+    }
+    
+    /* Animated line chart */
+    .line-chart {
+        position: absolute;
+        top: 20%;
+        left: 0;
+        width: 100%;
+        height: 40%;
+        opacity: 0.15;
+    }
+    
+    .chart-line {
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            #3b82f6 10%, 
+            #10b981 30%, 
+            #ef4444 50%, 
+            #10b981 70%, 
+            #3b82f6 90%, 
+            transparent 100%);
+        animation: chartMove 3s ease-in-out infinite;
+        transform-origin: left center;
+    }
+    
+    .chart-line:nth-child(1) { top: 30%; animation-delay: 0s; }
+    .chart-line:nth-child(2) { top: 50%; animation-delay: 1s; }
+    .chart-line:nth-child(3) { top: 70%; animation-delay: 2s; }
+    
+    @keyframes chartMove {
+        0% { transform: translateX(-100%) scaleX(0.5); }
+        100% { transform: translateX(100%) scaleX(1.5); }
+    }
+    
+    /* Floating price indicators */
+    .price-indicators {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    .price-tag {
+        position: absolute;
+        padding: 8px 16px;
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        border-radius: 8px;
+        color: #10b981;
+        font-weight: 600;
+        font-size: 14px;
+        animation: floatPrice 4s ease-in-out infinite;
+        backdrop-filter: blur(5px);
+    }
+    
+    .price-tag.down {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.4);
+        color: #ef4444;
+    }
+    
+    .price-tag:nth-child(1) { left: 10%; top: 15%; animation-delay: 0s; }
+    .price-tag:nth-child(2) { right: 15%; top: 25%; animation-delay: 1s; }
+    .price-tag:nth-child(3) { left: 20%; bottom: 25%; animation-delay: 2s; }
+    .price-tag:nth-child(4) { right: 10%; bottom: 35%; animation-delay: 3s; }
+    
+    @keyframes floatPrice {
+        0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+        50% { transform: translateY(-20px) scale(1.1); opacity: 0.9; }
+    }
+    
+    /* Grid background */
+    .grid-background {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            repeating-linear-gradient(0deg, rgba(59, 130, 246, 0.05) 0px, transparent 1px, transparent 40px, rgba(59, 130, 246, 0.05) 41px),
+            repeating-linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0px, transparent 1px, transparent 40px, rgba(59, 130, 246, 0.05) 41px);
+    }
+    
+    /* Enhanced login card with better visibility and contrast */
+    .login-card {
+        position: relative;
+        z-index: 10;
+        max-width: 480px;
+        width: 100%;
+        margin: 2rem;
+        padding: 3rem;
+        background: rgba(255, 255, 255, 0.98);
+        border-radius: 16px;
+        box-shadow: 
+            0 0 0 1px rgba(59, 130, 246, 0.1),
+            0 20px 60px rgba(0, 0, 0, 0.5),
+            0 0 100px rgba(59, 130, 246, 0.2);
+        backdrop-filter: blur(20px);
+    }
+    
+    .login-card h1 {
+        text-align: center;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 2.5rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+    
+    .login-card h2 {
+        text-align: center;
+        color: #1e293b;
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        font-weight: 600;
+    }
+    
+    .login-card .form-control {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        color: #0f172a;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .login-card .form-control:focus {
+        background: #ffffff;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .login-card .form-label {
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    
+    .login-card .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        border: none;
+        padding: 0.875rem;
+        font-size: 1.05rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    .login-card .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+    
+    .login-footer {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+    
+    .login-footer a {
+        color: #3b82f6;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    
+    .login-footer a:hover {
+        color: #8b5cf6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <!-- New animated stock market background with faster animations -->
+    <div class="stock-chart-container">
+        <div class="grid-background"></div>
+        
+        <div class="line-chart">
+            <div class="chart-line"></div>
+            <div class="chart-line"></div>
+            <div class="chart-line"></div>
+        </div>
+        
+        <div class="candlestick-chart">
+            <div class="candlestick"></div>
+            <div class="candlestick red"></div>
+            <div class="candlestick"></div>
+            <div class="candlestick"></div>
+            <div class="candlestick red"></div>
+            <div class="candlestick"></div>
+            <div class="candlestick"></div>
+            <div class="candlestick red"></div>
+            <div class="candlestick"></div>
+            <div class="candlestick"></div>
+        </div>
+        
+        <div class="price-indicators">
+            <div class="price-tag">₹2,450 ↑ +2.5%</div>
+            <div class="price-tag down">₹1,890 ↓ -1.8%</div>
+            <div class="price-tag">₹5,320 ↑ +4.2%</div>
+            <div class="price-tag down">₹3,150 ↓ -0.9%</div>
+        </div>
+    </div>
+    
+    <div class="card login-card">
+        <h1>Stockify</h1>
+        <h2>Welcome Back</h2>
+        
+        <div id="alert" style="display: none;"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input type="email" id="email" class="form-control" required placeholder="Enter your email">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" id="password" class="form-control" required placeholder="Enter your password">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+        </form>
+        
+        <p class="login-footer">
+            Don't have an account? <a href="/signup">Sign up</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const alertDiv = document.getElementById('alert');
+        
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alertDiv.className = 'alert alert-success';
+                alertDiv.textContent = data.message;
+                alertDiv.style.display = 'block';
+                setTimeout(() => {
+                    window.location.href = '/home';
+                }, 1000);
+            } else {
+                alertDiv.className = 'alert alert-error';
+                alertDiv.textContent = data.message;
+                alertDiv.style.display = 'block';
+            }
+        } catch (error) {
+            alertDiv.className = 'alert alert-error';
+            alertDiv.textContent = 'An error occurred. Please try again.';
+            alertDiv.style.display = 'block';
+        }
+    });
+</script>
+{% endblock %}
