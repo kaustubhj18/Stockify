@@ -67,10 +67,5 @@ You need Python 3.9+ installed and a package manager (like `pip`).
 * User authentication and **portfolio tracking**.
 * Migration of model training to cloud services (e.g., Google Cloud AI Platform).
 
-## 📄 License
-
-This project is licensed under the **MIT License** - see the `LICENSE` file for details.
-
----
 
 <p align="center">Made with ❤️ by Kaustubh J.</p>
